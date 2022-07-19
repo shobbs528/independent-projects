@@ -1,7 +1,9 @@
+# SH
 # Send notification when link for document/attachment updated
-# Based on SQL query, exported to CSV, converted to HTML table
-# Last updated: February 17, 2022
-# Changed email type to HTML; added table of attachment changes to email
+# Based on SQL query, exported to CSV
+# Will only send notifications
+# Last updated: February 24, 2022
+# Converted previously plaintext email to HTML email
 
 import csv
 import ctypes
@@ -24,11 +26,11 @@ oldValue = ""
 newValue = ""
 changedWhen = ""
 changedWho = ""
-smtp_server = ''
+smtp_server = '' # redacted server
 senderEmail = 'SKHobson@SolanoCounty.com'
 pwd = ''
-recipientEmails = ['SKHobson@SolanoCounty.com']
-textFilePath = 'C:\\Users\\skhobson\\Desktop\\LastAttachRunDate.txt'
+recipientEmails = ['SKHobson@SolanoCounty.com'] # redacted other recipients
+textFilePath = '' # redacted file path
 recordCount = 0
 
 # Get the date when the script was last run from text file (as string)
@@ -51,8 +53,8 @@ except Exception as e:
 
 # Create connection to SQL database
 cnxn = pyodbc.connect('DRIVER={ODBC DRIVER 17 for SQL Server};'
-                      '' # server name
-                      '' # database name
+                      'SERVER=' # redacted server
+                      'DATABASE=' # redacted database
                       'trusted_connection=yes')
 cnxn.setdecoding(pyodbc.SQL_CHAR, encoding='latin-1')
 cnxn.setdecoding(pyodbc.SQL_WCHAR, encoding='latin-1')
@@ -71,7 +73,7 @@ statement = f"select imdata.doc_id, imstr.table_name, imdtl.column_name, imlog.o
 rows = crsr.execute(statement)
 
 # Write output of SQL query to CSV file
-with open(r'C:\\Users\\skhobson\\Desktop\\AttachmentLog.csv', 'w', newline='') as csvfile:
+with open('', 'w', newline='') as csvfile: # redacted file path
     writer = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_NONE, escapechar='\\')
 
     for row in rows:
@@ -81,11 +83,14 @@ with open(r'C:\\Users\\skhobson\\Desktop\\AttachmentLog.csv', 'w', newline='') a
 if recordCount < 1:
     text = """
 Hello,
-Since the last time this script was run on """ + fileDate + """, there have been no updates to links for documents."""
+Since the last time this script was run on """ + fileDate + """, there have been no updates to links for documents.
+{table}"""
     html = """
-<html><body><p>Hello,<br>Since the last time this script was run on """ + fileDate + """, there have been no updates to links for documents.</p>
-<p>SH</p>
-</body></html>"""
+<html><body>
+<p>Hello,<br>Since the last time this script was run on """ + fileDate + """, there have been no updates 
+to links for documents.</p> 
+<p>Good day,</p>
+<p>SH</p> </body></html> """
     message = MIMEMultipart("alternative", None, [MIMEText(text), MIMEText(html, 'html')])
     message['Subject'] = 'No links for documents have been updated'
     message['From'] = senderEmail
@@ -98,17 +103,17 @@ Since the last time this script was run on """ + fileDate + """, there have been
     server.quit()
 else:
     # Open CSV file in read-mode and read to "data" variable
-    fi = open('C:\\Users\\skhobson\\Desktop\\AttachmentLog.csv', 'r')
+    fi = open('', 'r') # redacted file path
     data = fi.read()
     fi.close()
 
     # Write data from first CSV file to new CSV file to get rid of null bytes (\x00)
-    fo = open('C:\\Users\\skhobson\\Desktop\\AttachmentLogNew.csv', 'w')
+    fo = open('', 'w') # redacted file path
     fo.write(data.replace('\x00', ''))
     fo.close()
 
     # Get rid of first CSV file as it is not needed anymore (first checks to make sure it's there and exists as a file)
-    deleteFile = 'C:\\Users\\skhobson\\Desktop\\AttachmentLog.csv'
+    deleteFile = '' # redacted file path
     if os.path.exists(deleteFile) and os.path.isfile(deleteFile):
         os.remove(deleteFile)
 
@@ -116,20 +121,24 @@ else:
 Hello,
 Since the last time this script was run on """ + fileDate + """, the following links for documents have been updated:"""
     html = """
-<html><body><p>Hello,<br>Since the last time this script was run on """ + fileDate + """, the following links for documents have been updated:</p>
-{table}
-<p>SH</p>
-</body></html>
-"""
+<html><body>
+<p>Hello,<br>Since the last time this script was run on """ + fileDate + """, the following links for 
+documents have been updated:</p> 
+{table} 
+<p>Good day,</p>
+<p>SH</p> 
+</body></html> """
 
-    with open('C:\\Users\\skhobson\\Desktop\\AttachmentLogNew.csv') as table_file:
+    with open('') as table_file: # redacted file path
         reader = csv.reader(table_file)
         data = list(reader)
 
         text = text.format(table=tabulate(data, headers=['Doc ID', 'Table', 'Column', 'Old value', 'New value',
-                                                         'Changed when', 'Changed by'], tablefmt='pretty'))
+                                                         'Changed when', 'Changed by'], tablefmt='pretty',
+                                          numalign='center', stralign='center'))
         html = html.format(table=tabulate(data, headers=['Doc ID', 'Table', 'Column', 'Old value', 'New value',
-                                                         'Changed when', 'Changed by'], tablefmt='html'))
+                                                         'Changed when', 'Changed by'], tablefmt='html',
+                                          numalign='center', stralign='center'))
 
     message = MIMEMultipart("alternative", None, [MIMEText(text), MIMEText(html, 'html')])
     message['Subject'] = 'Some link(s) for document(s) have been updated'
